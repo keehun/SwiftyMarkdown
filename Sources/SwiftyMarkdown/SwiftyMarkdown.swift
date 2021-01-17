@@ -155,7 +155,7 @@ If that is not set, then the system default will be used.
 		FrontMatterRule(openTag: "---", closeTag: "---", keyValueSeparator: ":")
 	]
 	
-	static public var lineRules = [
+	static public var defaultLineRules = [
 		LineRule(token: "=", type: MarkdownLineStyle.previousH1, removeFrom: .entireLine, changeAppliesTo: .previous),
 		LineRule(token: "-", type: MarkdownLineStyle.previousH2, removeFrom: .entireLine, changeAppliesTo: .previous),
 		LineRule(token: "\t\t- ", type: MarkdownLineStyle.unorderedListIndentSecondOrder, removeFrom: .leading, shouldTrim: false),
@@ -178,7 +178,7 @@ If that is not set, then the system default will be used.
 		LineRule(token: "# ",type : MarkdownLineStyle.h1, removeFrom: .both)
 	]
 	
-	static public var characterRules = [
+	static public var defaultCharacterRules = [
 		CharacterRule(primaryTag: CharacterRuleTag(tag: "![", type: .open), otherTags: [
 				CharacterRuleTag(tag: "]", type: .close),
 				CharacterRuleTag(tag: "[", type: .metadataOpen),
@@ -205,8 +205,8 @@ If that is not set, then the system default will be used.
 		CharacterRule(primaryTag: CharacterRuleTag(tag: "_", type: .repeating), otherTags: [], styles: [1 : CharacterStyle.italic, 2 : CharacterStyle.bold], minTags:1 , maxTags:2)
 	]
 	
-	let lineProcessor = SwiftyLineProcessor(rules: SwiftyMarkdown.lineRules, defaultRule: MarkdownLineStyle.body, frontMatterRules: SwiftyMarkdown.frontMatterRules)
-	let tokeniser = SwiftyTokeniser(with: SwiftyMarkdown.characterRules)
+    let lineProcessor: SwiftyLineProcessor
+    let tokeniser: SwiftyTokeniser
 	
 	/// The styles to apply to any H1 headers found in the Markdown
 	open var h1 = LineStyles()
@@ -273,11 +273,22 @@ If that is not set, then the system default will be used.
 	/**
 	
 	- parameter string: A string containing [Markdown](https://daringfireball.net/projects/markdown/) syntax to be converted to an NSAttributedString
+
+    - parameter lineRules: A list of line rules to use for this markdown instance. To use the default line rules, don't include the parameter in the initializer call.
+
+    - parameter characterRules: A list of character rules to use for this markdown instance. To use the default character rules, don't include the parameter in the initializer call.
 	
 	- returns: An initialized SwiftyMarkdown object
 	*/
-	public init(string : String ) {
+    public init(string : String,
+                lineRules: [LineRule] = defaultLineRules,
+                characterRules: [CharacterRule] = defaultCharacterRules) {
 		self.string = string
+        lineProcessor = SwiftyLineProcessor(rules: lineRules,
+                                            defaultRule: MarkdownLineStyle.body,
+                                            frontMatterRules: SwiftyMarkdown.frontMatterRules)
+        tokeniser = SwiftyTokeniser(with: characterRules)
+
 		super.init()
 		self.setup()
 	}
@@ -286,10 +297,16 @@ If that is not set, then the system default will be used.
 	A failable initializer that takes a URL and attempts to read it as a UTF-8 string
 	
 	- parameter url: The location of the file to read
+
+    - parameter lineRules: A list of line rules to use for this markdown instance. To use the default line rules, don't include the parameter in the initializer call.
+
+    - parameter characterRules: A list of character rules to use for this markdown instance. To use the default character rules, don't include the parameter in the initializer call.
 	
 	- returns: An initialized SwiftyMarkdown object, or nil if the string couldn't be read
 	*/
-	public init?(url : URL ) {
+	public init?(url : URL,
+                 lineRules: [LineRule] = defaultLineRules,
+                 characterRules: [CharacterRule] = defaultCharacterRules) {
 		
 		do {
 			self.string = try NSString(contentsOf: url, encoding: String.Encoding.utf8.rawValue) as String
@@ -298,6 +315,12 @@ If that is not set, then the system default will be used.
 			self.string = ""
 			return nil
 		}
+
+        lineProcessor = SwiftyLineProcessor(rules: lineRules,
+                                            defaultRule: MarkdownLineStyle.body,
+                                            frontMatterRules: SwiftyMarkdown.frontMatterRules)
+        tokeniser = SwiftyTokeniser(with: characterRules)
+
 		super.init()
 		self.setup()
 	}
